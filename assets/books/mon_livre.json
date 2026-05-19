@@ -1,0 +1,28 @@
+{
+  "title": "Le Voyageur des Ombres",
+  "author": "Stéphane Gaillet",
+  "cover": "assets/images/cover.png",
+  "description": "Un livre interactif de démonstration qui suit Elior, un voyageur capable d'entendre les souvenirs des lieux oubliés.",
+  "chapters": [
+    {
+      "id": "chapitre_1",
+      "title": "Chapitre 1 - Le départ",
+      "content": "# Chapitre 1 - Le départ\n\nLe vent soufflait doucement sur les toits d'ardoise quand Elior quitta la ville de Solenne.\n\nIl n'emportait qu'un sac, une boussole fissurée et une promesse faite à sa sœur : **revenir avant l'hiver**.\n\nAu bout du chemin, la plaine semblait paisible. Pourtant, dans le silence, il entendait déjà ce murmure ancien qui n'appartenait à personne..."
+    },
+    {
+      "id": "chapitre_2",
+      "title": "Chapitre 2 - La forêt",
+      "content": "# Chapitre 2 - La forêt\n\nLa nuit tombait sur la forêt de Dréanor. Les arbres y poussaient si proches qu'ils formaient des arches de bois et d'ombre.\n\nChaque pas réveillait un souvenir perdu. Elior posa la main contre une écorce noire et aperçut, comme un éclair, l'image d'un enfant courant sous la pluie.\n\n> Cette forêt n'oublie rien.\n\nAu loin, une lanterne vacilla entre les troncs."
+    },
+    {
+      "id": "chapitre_3",
+      "title": "Chapitre 3 - Le passeur",
+      "content": "# Chapitre 3 - Le passeur\n\nPrès de la rivière blanche, un vieil homme attendait sur une barque étroite.\n\n\"Tu arrives tard\", dit-il, sans lever les yeux.\n\nElior reconnut le symbole gravé sur la rame : un cercle coupé par trois traits, la marque des passeurs de mémoire.\n\nLe courant était calme, mais l'eau reflétait un ciel sans étoiles."
+    },
+    {
+      "id": "chapitre_4",
+      "title": "Chapitre 4 - La cité engloutie",
+      "content": "# Chapitre 4 - La cité engloutie\n\nÀ l'aube, la brume se déchira et révéla des tours effondrées sous le lac.\n\nDes marches de pierre descendaient dans l'eau claire comme du verre.\n\nElior comprit alors que les ombres qu'il suivait n'étaient pas seulement des souvenirs : elles cherchaient un témoin.\n\nEt ce témoin, désormais, c'était lui."
+    }
+  ]
+}
