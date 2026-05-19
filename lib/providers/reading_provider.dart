@@ -22,6 +22,8 @@ class ReadingProvider extends ChangeNotifier {
   double _fontSize = 18;
   Map<String, String> _notes = {};
   Set<String> _favorites = {};
+  bool _isImporting = false;
+  String? _remoteBookUrl;
 
   Book? get book => _book;
   bool get isLoading => _isLoading;
@@ -31,6 +33,8 @@ class ReadingProvider extends ChangeNotifier {
   double get fontSize => _fontSize;
   Map<String, String> get notes => _notes;
   Set<String> get favorites => _favorites;
+  bool get isImporting => _isImporting;
+  String? get remoteBookUrl => _remoteBookUrl;
 
   Chapter? get currentChapter {
     if (_book == null || _book!.chapters.isEmpty) {
@@ -50,12 +54,26 @@ class ReadingProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    final loadedBook = await _bookLoader.loadBook();
+    final storedRemoteJson = await _storageService.loadRemoteBookJson();
     final loadedIndex = await _storageService.loadCurrentChapterIndex();
     final loadedDarkMode = await _storageService.loadDarkMode();
     final loadedFontSize = await _storageService.loadFontSize();
     final loadedNotes = await _storageService.loadNotes();
     final loadedFavorites = await _storageService.loadFavorites();
+    final loadedRemoteUrl = await _storageService.loadRemoteBookUrl();
+
+    Book loadedBook;
+    if (storedRemoteJson != null && storedRemoteJson.trim().isNotEmpty) {
+      try {
+        loadedBook = _bookLoader.parseBook(storedRemoteJson);
+      } catch (_) {
+        loadedBook = await _bookLoader.loadBook();
+        await _storageService.clearRemoteBookJson();
+        await _storageService.clearRemoteBookUrl();
+      }
+    } else {
+      loadedBook = await _bookLoader.loadBook();
+    }
 
     _book = loadedBook;
     _currentChapterIndex = loadedIndex.clamp(0, _book!.chapters.length - 1);
@@ -63,6 +81,7 @@ class ReadingProvider extends ChangeNotifier {
     _fontSize = loadedFontSize.clamp(14, 30);
     _notes = loadedNotes;
     _favorites = loadedFavorites;
+    _remoteBookUrl = loadedRemoteUrl;
 
     _isLoading = false;
     notifyListeners();
@@ -147,5 +166,74 @@ class ReadingProvider extends ChangeNotifier {
     notifyListeners();
     await _storageService.resetProgress();
     await _storageService.saveCurrentChapterIndex(0);
+  }
+
+  Future<void> importBookFromUrl(String url) async {
+    _isImporting = true;
+    notifyListeners();
+
+    try {
+      final trimmedUrl = url.trim();
+      final rawJson = await _bookLoader.downloadRawBookJson(trimmedUrl);
+      final newBook = _bookLoader.parseBook(rawJson);
+
+      _book = newBook;
+      _currentChapterIndex = 0;
+      _notes = {};
+      _favorites = {};
+      _remoteBookUrl = trimmedUrl;
+
+      await _storageService.saveRemoteBookJson(rawJson);
+      await _storageService.saveRemoteBookUrl(trimmedUrl);
+      await _storageService.resetProgress();
+      await _storageService.saveCurrentChapterIndex(0);
+    } finally {
+      _isImporting = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> restoreBuiltInBook() async {
+    _isImporting = true;
+    notifyListeners();
+
+    try {
+      final builtIn = await _bookLoader.loadBook();
+      _book = builtIn;
+      _currentChapterIndex = 0;
+      _notes = {};
+      _favorites = {};
+      _remoteBookUrl = null;
+
+      await _storageService.clearRemoteBookJson();
+      await _storageService.clearRemoteBookUrl();
+      await _storageService.resetProgress();
+      await _storageService.saveCurrentChapterIndex(0);
+    } finally {
+      _isImporting = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadBundledBook(String assetPath) async {
+    _isImporting = true;
+    notifyListeners();
+
+    try {
+      final bundledBook = await _bookLoader.loadBookFromAssetPath(assetPath);
+      _book = bundledBook;
+      _currentChapterIndex = 0;
+      _notes = {};
+      _favorites = {};
+      _remoteBookUrl = null;
+
+      await _storageService.clearRemoteBookJson();
+      await _storageService.clearRemoteBookUrl();
+      await _storageService.resetProgress();
+      await _storageService.saveCurrentChapterIndex(0);
+    } finally {
+      _isImporting = false;
+      notifyListeners();
+    }
   }
 }

@@ -8,6 +8,8 @@ class StorageService {
   static const String keyFontSize = 'font_size';
   static const String keyNotes = 'notes_by_chapter';
   static const String keyFavorites = 'favorites_chapters';
+  static const String keyRemoteBookJson = 'remote_book_json';
+  static const String keyRemoteBookUrl = 'remote_book_url';
 
   Future<void> saveCurrentChapterIndex(int index) async {
     final prefs = await SharedPreferences.getInstance();
@@ -70,5 +72,35 @@ class StorageService {
     await prefs.remove(keyCurrentChapterIndex);
     await prefs.remove(keyNotes);
     await prefs.remove(keyFavorites);
+  }
+
+  Future<void> saveRemoteBookJson(String json) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(keyRemoteBookJson, json);
+  }
+
+  Future<String?> loadRemoteBookJson() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(keyRemoteBookJson);
+  }
+
+  Future<void> clearRemoteBookJson() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(keyRemoteBookJson);
+  }
+
+  Future<void> saveRemoteBookUrl(String url) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(keyRemoteBookUrl, url);
+  }
+
+  Future<String?> loadRemoteBookUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(keyRemoteBookUrl);
+  }
+
+  Future<void> clearRemoteBookUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(keyRemoteBookUrl);
   }
 }
