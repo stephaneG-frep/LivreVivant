@@ -15,8 +15,8 @@ class BookLoader {
   }
 
   Future<Book> loadBookFromAssetPath(String assetPath) async {
-    final jsonString = await rootBundle.loadString(assetPath);
-    return parseBook(jsonString);
+    final rawContent = await rootBundle.loadString(assetPath);
+    return parseBookFromContent(rawContent: rawContent, sourceLabel: assetPath);
   }
 
   Book parseBook(String jsonString) {

@@ -7,4 +7,4 @@
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:previewImage="@mipmap/ic_launcher"
-    android:description="Widget LivreVivant" />
+    android:description="@string/livre_vivant_widget_description" />
