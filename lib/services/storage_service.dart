@@ -10,6 +10,7 @@ class StorageService {
   static const String keyFavorites = 'favorites_chapters';
   static const String keyRemoteBookJson = 'remote_book_json';
   static const String keyRemoteBookUrl = 'remote_book_url';
+  static const String keyDownloadedBooks = 'downloaded_books';
 
   Future<void> saveCurrentChapterIndex(int index) async {
     final prefs = await SharedPreferences.getInstance();
@@ -102,5 +103,15 @@ class StorageService {
   Future<void> clearRemoteBookUrl() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(keyRemoteBookUrl);
+  }
+
+  Future<void> saveDownloadedBooksJson(String jsonList) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(keyDownloadedBooks, jsonList);
+  }
+
+  Future<String?> loadDownloadedBooksJson() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(keyDownloadedBooks);
   }
 }

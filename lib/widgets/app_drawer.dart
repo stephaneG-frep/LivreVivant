@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../screens/downloaded_books_screen.dart';
 import '../screens/favorites_screen.dart';
 import '../screens/notes_screen.dart';
 import '../screens/settings_screen.dart';
@@ -65,6 +66,17 @@ class AppDrawer extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const FavoritesScreen()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.download_done_rounded),
+            title: const Text('Livres téléchargés'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DownloadedBooksScreen()),
               );
             },
           ),

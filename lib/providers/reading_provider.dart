@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../models/book.dart';
 import '../models/chapter.dart';
+import '../models/downloaded_book.dart';
 import '../services/book_loader.dart';
 import '../services/storage_service.dart';
 
@@ -24,6 +27,7 @@ class ReadingProvider extends ChangeNotifier {
   Set<String> _favorites = {};
   bool _isImporting = false;
   String? _remoteBookUrl;
+  List<DownloadedBook> _downloadedBooks = [];
 
   Book? get book => _book;
   bool get isLoading => _isLoading;
@@ -35,6 +39,7 @@ class ReadingProvider extends ChangeNotifier {
   Set<String> get favorites => _favorites;
   bool get isImporting => _isImporting;
   String? get remoteBookUrl => _remoteBookUrl;
+  List<DownloadedBook> get downloadedBooks => List.unmodifiable(_downloadedBooks);
 
   Chapter? get currentChapter {
     if (_book == null || _book!.chapters.isEmpty) {
@@ -54,18 +59,22 @@ class ReadingProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    final storedRemoteJson = await _storageService.loadRemoteBookJson();
+    final storedRemoteContent = await _storageService.loadRemoteBookJson();
     final loadedIndex = await _storageService.loadCurrentChapterIndex();
     final loadedDarkMode = await _storageService.loadDarkMode();
     final loadedFontSize = await _storageService.loadFontSize();
     final loadedNotes = await _storageService.loadNotes();
     final loadedFavorites = await _storageService.loadFavorites();
     final loadedRemoteUrl = await _storageService.loadRemoteBookUrl();
+    final downloadedBooksJson = await _storageService.loadDownloadedBooksJson();
 
     Book loadedBook;
-    if (storedRemoteJson != null && storedRemoteJson.trim().isNotEmpty) {
+    if (storedRemoteContent != null && storedRemoteContent.trim().isNotEmpty) {
       try {
-        loadedBook = _bookLoader.parseBook(storedRemoteJson);
+        loadedBook = _bookLoader.parseBookFromContent(
+          rawContent: storedRemoteContent,
+          sourceLabel: loadedRemoteUrl,
+        );
       } catch (_) {
         loadedBook = await _bookLoader.loadBook();
         await _storageService.clearRemoteBookJson();
@@ -82,6 +91,7 @@ class ReadingProvider extends ChangeNotifier {
     _notes = loadedNotes;
     _favorites = loadedFavorites;
     _remoteBookUrl = loadedRemoteUrl;
+    _downloadedBooks = _decodeDownloadedBooks(downloadedBooksJson);
 
     _isLoading = false;
     notifyListeners();
@@ -169,22 +179,49 @@ class ReadingProvider extends ChangeNotifier {
   }
 
   Future<void> importBookFromUrl(String url) async {
+    final trimmedUrl = url.trim();
+    final rawContent = await _bookLoader.downloadRawBookContent(trimmedUrl);
+    await importBookFromRawContent(
+      rawContent: rawContent,
+      sourceLabel: trimmedUrl,
+    );
+  }
+
+  Future<void> importBookFromRawContent({
+    required String rawContent,
+    String? sourceLabel,
+    String? formatHint,
+  }) async {
     _isImporting = true;
     notifyListeners();
 
     try {
-      final trimmedUrl = url.trim();
-      final rawJson = await _bookLoader.downloadRawBookJson(trimmedUrl);
-      final newBook = _bookLoader.parseBook(rawJson);
+      final newBook = _bookLoader.parseBookFromContent(
+        rawContent: rawContent,
+        sourceLabel: sourceLabel,
+        formatHint: formatHint,
+      );
+      final format = _resolveFormatFromHintOrSource(sourceLabel, formatHint);
 
       _book = newBook;
       _currentChapterIndex = 0;
       _notes = {};
       _favorites = {};
-      _remoteBookUrl = trimmedUrl;
+      _remoteBookUrl = sourceLabel;
 
-      await _storageService.saveRemoteBookJson(rawJson);
-      await _storageService.saveRemoteBookUrl(trimmedUrl);
+      await _storageService.saveRemoteBookJson(rawContent);
+      await _upsertDownloadedBook(
+        rawJson: rawContent,
+        title: newBook.title,
+        author: newBook.author,
+        sourceLabel: sourceLabel ?? 'Import local',
+        format: format,
+      );
+      if (sourceLabel != null && sourceLabel.trim().isNotEmpty) {
+        await _storageService.saveRemoteBookUrl(sourceLabel);
+      } else {
+        await _storageService.clearRemoteBookUrl();
+      }
       await _storageService.resetProgress();
       await _storageService.saveCurrentChapterIndex(0);
     } finally {
@@ -235,5 +272,99 @@ class ReadingProvider extends ChangeNotifier {
       _isImporting = false;
       notifyListeners();
     }
+  }
+
+  Future<void> openDownloadedBook(String downloadedBookId) async {
+    final index = _downloadedBooks.indexWhere((b) => b.id == downloadedBookId);
+    if (index == -1) return;
+    final item = _downloadedBooks[index];
+
+    await importBookFromRawContent(
+      rawContent: item.rawJson,
+      sourceLabel: item.sourceLabel,
+      formatHint: item.format,
+    );
+  }
+
+  Future<void> deleteDownloadedBook(String downloadedBookId) async {
+    _downloadedBooks.removeWhere((b) => b.id == downloadedBookId);
+    await _persistDownloadedBooks();
+    notifyListeners();
+  }
+
+  List<DownloadedBook> _decodeDownloadedBooks(String? raw) {
+    if (raw == null || raw.trim().isEmpty) {
+      return [];
+    }
+    try {
+      final decoded = jsonDecode(raw) as List<dynamic>;
+      return decoded
+          .map((entry) => DownloadedBook.fromJson(entry as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> _upsertDownloadedBook({
+    required String rawJson,
+    required String title,
+    required String author,
+    required String sourceLabel,
+    required String format,
+  }) async {
+    final existingIndex = _downloadedBooks.indexWhere(
+      (b) => b.title == title && b.author == author,
+    );
+    final now = DateTime.now().toIso8601String();
+    if (existingIndex == -1) {
+      _downloadedBooks.insert(
+        0,
+        DownloadedBook(
+          id: '${DateTime.now().millisecondsSinceEpoch}_$title',
+          title: title,
+          author: author,
+          sourceLabel: sourceLabel,
+          rawJson: rawJson,
+          format: format,
+          savedAtIso: now,
+        ),
+      );
+    } else {
+      final previous = _downloadedBooks[existingIndex];
+      _downloadedBooks[existingIndex] = DownloadedBook(
+        id: previous.id,
+        title: title,
+        author: author,
+        sourceLabel: sourceLabel,
+        rawJson: rawJson,
+        format: format,
+        savedAtIso: now,
+      );
+      final updated = _downloadedBooks.removeAt(existingIndex);
+      _downloadedBooks.insert(0, updated);
+    }
+    await _persistDownloadedBooks();
+  }
+
+  Future<void> _persistDownloadedBooks() async {
+    final listJson = jsonEncode(_downloadedBooks.map((b) => b.toJson()).toList());
+    await _storageService.saveDownloadedBooksJson(listJson);
+  }
+
+  String _resolveFormatFromHintOrSource(String? sourceLabel, String? formatHint) {
+    final normalizedHint = formatHint?.toLowerCase().trim();
+    if (normalizedHint == 'json' || normalizedHint == 'md' || normalizedHint == 'txt') {
+      return normalizedHint!;
+    }
+
+    final source = (sourceLabel ?? '').toLowerCase();
+    if (source.endsWith('.md') || source.endsWith('.markdown')) {
+      return 'md';
+    }
+    if (source.endsWith('.txt')) {
+      return 'txt';
+    }
+    return 'json';
   }
 }

@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -49,7 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 18),
               Text(
-                'Importer un livre depuis une URL (JSON)',
+                'Importer un livre depuis une URL (JSON/MD/TXT)',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -59,7 +63,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 controller: _urlController,
                 keyboardType: TextInputType.url,
                 decoration: const InputDecoration(
-                  hintText: 'https://exemple.com/mon_livre.json',
+                  hintText: 'https://exemple.com/mon_livre.json | .md | .txt',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -76,6 +80,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       )
                     : const Icon(Icons.download_rounded),
                 label: const Text('Télécharger et utiliser ce livre'),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: provider.isImporting
+                    ? null
+                    : () => _importFromSmartphoneFile(context, provider),
+                icon: const Icon(Icons.upload_file_rounded),
+                label: const Text('Importer JSON/MD/TXT depuis le smartphone'),
               ),
               const SizedBox(height: 10),
               OutlinedButton.icon(
@@ -121,6 +133,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!context.mounted) return;
       messenger.showSnackBar(
         SnackBar(content: Text('Erreur import: $error')),
+      );
+    }
+  }
+
+  Future<void> _importFromSmartphoneFile(
+    BuildContext context,
+    ReadingProvider provider,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final picked = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['json', 'md', 'markdown', 'txt'],
+        allowMultiple: false,
+        withData: true,
+      );
+
+      if (picked == null || picked.files.isEmpty) {
+        return;
+      }
+
+      final file = picked.files.first;
+      String rawContent;
+      if (file.bytes != null) {
+        rawContent = utf8.decode(file.bytes!);
+      } else if (file.path != null) {
+        rawContent = await File(file.path!).readAsString();
+      } else {
+        throw Exception('Impossible de lire le fichier sélectionné.');
+      }
+
+      await provider.importBookFromRawContent(
+        rawContent: rawContent,
+        sourceLabel: file.name,
+      );
+      if (!context.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Livre importé depuis ${file.name}.')),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Erreur import fichier: $error')),
       );
     }
   }
