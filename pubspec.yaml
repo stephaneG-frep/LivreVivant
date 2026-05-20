@@ -21,6 +21,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.1
 
 flutter:
   uses-material-design: true
@@ -28,4 +29,13 @@ flutter:
   assets:
     - assets/books/mon_livre.json
     - assets/books/mon_livre_github.json
+    - assets/books/livre_pedagogique_bash_linux.md
+    - assets/books/hacking_etique.md
     - assets/images/cover.png
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: assets/images/cover.png
+  adaptive_icon_background: "#F6E7D3"
+  adaptive_icon_foreground: assets/images/cover.png

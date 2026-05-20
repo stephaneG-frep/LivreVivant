@@ -73,12 +73,30 @@ class _HomeScreenState extends State<HomeScreen> {
                       duration: const Duration(milliseconds: 180),
                       transform: Matrix4.identity()
                         ..translateByDouble(_coverOffset.dx, _coverOffset.dy, 0, 1),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: Image.asset(
-                          book.cover,
-                          height: 260,
-                          fit: BoxFit.cover,
+                      child: Container(
+                        height: 260,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(24),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFFAA5A3D),
+                              Color(0xFFD08A56),
+                              Color(0xFF6F3C2A),
+                            ],
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Text(
+                          book.title,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                height: 1.25,
+                              ),
                         ),
                       ),
                     ),

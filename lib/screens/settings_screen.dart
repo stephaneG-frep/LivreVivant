@@ -105,6 +105,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: const Icon(Icons.menu_book_rounded),
                 label: const Text('Charger mon livre Git/GitHub (local)'),
               ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: provider.isImporting
+                    ? null
+                    : () => _loadBashBook(context, provider),
+                icon: const Icon(Icons.terminal_rounded),
+                label: const Text('Charger le livre Bash Linux (local)'),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: provider.isImporting
+                    ? null
+                    : () => _loadEthicalHackingBook(context, provider),
+                icon: const Icon(Icons.security_rounded),
+                label: const Text('Charger le livre Hacking Éthique (local)'),
+              ),
               if (currentUrl != null) ...[
                 const SizedBox(height: 8),
                 Text('Livre externe actuel : $currentUrl'),
@@ -194,6 +210,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Livre Git/GitHub local chargé.')),
+    );
+  }
+
+  Future<void> _loadBashBook(BuildContext context, ReadingProvider provider) async {
+    await provider.loadBundledBook('assets/books/livre_pedagogique_bash_linux.md');
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Livre Bash Linux local chargé.')),
+    );
+  }
+
+  Future<void> _loadEthicalHackingBook(BuildContext context, ReadingProvider provider) async {
+    await provider.loadBundledBook('assets/books/hacking_etique.md');
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Livre Hacking Éthique local chargé.')),
     );
   }
 
